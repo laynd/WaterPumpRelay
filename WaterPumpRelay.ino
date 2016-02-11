@@ -29,9 +29,9 @@
 // If using software SPI (the default case):
 #define OLED_MOSI   5
 #define OLED_CLK   4
-#define OLED_DC    7
+#define OLED_DC    8
 #define OLED_CS    6
-#define OLED_RESET 13
+#define OLED_RESET 7
 Adafruit_SSD1306 display(OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
 
 #define LOGO16_GLCD_HEIGHT 16 

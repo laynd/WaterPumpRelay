@@ -2,7 +2,8 @@
 #include "U8glib.h"
 #include <Keypad.h>
 
-U8GLIB_SSD1306_128X64 u8g(4, 5, 6, 7); // SW SPI Com: SCK = 4, MOSI = 5, CS = 6, A0 = 7
+U8GLIB_SSD1306_128X64 u8g(13, 11, 10, 9);	// SW SPI Com: SCK = 13, MOSI = 11, CS = 10, A0 = 9
+
 #define KEY_NONE 0
 #define KEY_PREV 1
 #define KEY_NEXT 2
@@ -17,8 +18,8 @@ char keys[ROWS][COLS] = {
     {'7','8','9','C'},
     {'*','0','#','D'}
 };
-byte rowPins[ROWS] = {36, 34, 32, 30}; //connect to the row pinouts of the keypad
-byte colPins[COLS] = {28, 26, 24, 22}; //connect to the column pinouts of the keypad 
+byte rowPins[ROWS] = {7, 6, 5, 4}; //connect to the row pinouts of the keypad
+byte colPins[COLS] = {3, 2, 1, 0}; //connect to the column pinouts of the keypad 
 // initialize an instance of class NewKeypad
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 // keypad initialization
@@ -86,10 +87,9 @@ uint8_t last_key_code = KEY_NONE;
 void drawMenu(void) {
   uint8_t i, h;
   u8g_uint_t w, d;
-  //u8g.u8g_SetFontPosBaseline(10); //will it work?... 
   u8g.setFont(u8g_font_6x13);
   u8g.setFontRefHeightText();
-  u8g.setFontPosCenter();
+  u8g.setFontPosTop();
   
   h = u8g.getFontAscent()-u8g.getFontDescent();
   w = u8g.getWidth();
@@ -128,7 +128,8 @@ void updateMenu(void) {
 
 
 void setup() {
- 
+  
+   //u8g.initSPI(u8g(4, 5, 6, 7), 4, 5, 6, 7, 8);
   //u8g.setVirtualScreenDimension(128, 64);
   uiSetup();                                // setup key detection and debounce algorithm
   menu_redraw_required = 1;     // force initial redraw
