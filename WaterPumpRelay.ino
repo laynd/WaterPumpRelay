@@ -19,19 +19,21 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <rtc_clock.h> //clock module lib
-#include <Adafruit_GFX.h> // monochrome display related
-#include <Adafruit_SSD1306.h> //OLED lib
+#include <U8glib.h>
 #include <Keypad.h> //keypad related
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
-#define OLED_RESET 4
-Adafruit_SSD1306 display(OLED_RESET);
+//U8GLIB_SSD1306_128X64 u8g(4, 5, 6, 7); // SW SPI Com: SCK = 4, MOSI = 5, CS = 6, A0 = 7 (screen initialization)
 
-#define BAUD 9600  //serial port frequency for monitoring what's happening via arduino soft port serial monitor (tools/serialmonitor)
-#define ON LOW     //these are to control relay on/off
-#define OFF HIGH
-#define RELAY 4    // relay connected on digital pin 4
+// If using software SPI (the default case):
+#define OLED_MOSI   5
+#define OLED_CLK   4
+#define OLED_DC    7
+#define OLED_CS    6
+#define OLED_RESET 13
+Adafruit_SSD1306 display(OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
 
-// OLED screen related
 #define LOGO16_GLCD_HEIGHT 16 
 #define LOGO16_GLCD_WIDTH  16 
 static const unsigned char PROGMEM logo16_glcd_bmp[] =
@@ -51,12 +53,24 @@ static const unsigned char PROGMEM logo16_glcd_bmp[] =
   B01111100, B11110000,
   B01110000, B01110000,
   B00000000, B00110000 };
+
 #if (SSD1306_LCDHEIGHT != 64)
 #error("Height incorrect, please fix Adafruit_SSD1306.h!");
 #endif
 
-// clock module related
-RTC_clock rtc_clock(XTAL);
+#define BAUD 9600  //serial port frequency for monitoring what's happening via arduino soft port serial monitor (tools/serialmonitor)
+#define ON LOW     //these are to control relay on/off
+#define OFF HIGH
+#define RELAY 4    // relay connected on digital pin 4
+
+#define KEY_NONE 0
+#define KEY_PREV 1
+#define KEY_NEXT 2
+#define KEY_SELECT 3
+#define KEY_BACK 4
+
+// clock module related (DUE internal clock)
+RTC_clock rtc_clock(RC);//RTC_clock rtc_clock(XTAL);
 char* daynames[]={"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
 
 // keypad set up
@@ -68,8 +82,8 @@ char keys[ROWS][COLS] = {
     {'7','8','9','C'},
     {'*','0','#','D'}
 };
-byte rowPins[ROWS] = {8, 7, 6, 5}; //connect to the row pinouts of the keypad
-byte colPins[COLS] = {12, 13, 10, 9}; //connect to the column pinouts of the keypad pin 11 switched to 13 bc of 11 set to play audio
+byte rowPins[ROWS] = {36, 34, 32, 30}; //connect to the row pinouts of the keypad
+byte colPins[COLS] = {28, 26, 24, 22}; //connect to the column pinouts of the keypad 
 // initialize an instance of class NewKeypad
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 // keypad initialization
@@ -93,7 +107,7 @@ void setup()   {
   rtc_clock.set_date(2, 2, 2016);
 
   // by default, we'll generate the high voltage from the 3.3v line internally! (neat!)
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3D);  // initialize with the I2C addr 0x3D (for the 128x64)
+  display.begin(SSD1306_SWITCHCAPVCC);  
   // init done
 
   //clearing display and setting in blank
@@ -177,9 +191,9 @@ void loop() {
           mStop=combiner(mn1, mn2);
           Serial.println();
           Serial.print("Hours Till Shutdown: ");
-          Serial.print(hStart);
+          Serial.print(hStop);
           Serial.print("Minutes Till ShutDown: ");
-          Serial.print(mStart);
+          Serial.print(mStop);
           Serial.println();
           break;
           
@@ -250,89 +264,4 @@ int combiner(int x, int y){ //combining knowing that numbers do not go beyond do
 
 //below are graphic functions that might be useful for something or might not 
 
-/*
-
-void testdrawchar(void) {
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(0,0);
-
-  for (uint8_t i=0; i < 168; i++) {
-    if (i == '\n') continue;
-    display.write(i);
-    if ((i > 0) && (i % 21 == 0))
-      display.println();
-  }    
-  display.display();
-}
-
-void testdrawroundrect(void) {
-  for (int16_t i=0; i<display.height()/2-2; i+=2) {
-    display.drawRoundRect(i, i, display.width()-2*i, display.height()-2*i, display.height()/4, WHITE);
-    display.display();
-  }
-}
-
-void testfillroundrect(void) {
-  uint8_t color = WHITE;
-  for (int16_t i=0; i<display.height()/2-2; i+=2) {
-    display.fillRoundRect(i, i, display.width()-2*i, display.height()-2*i, display.height()/4, color);
-    if (color == WHITE) color = BLACK;
-    else color = WHITE;
-    display.display();
-  }
-}
-   
-void testdrawrect(void) {
-  for (int16_t i=0; i<display.height()/2; i+=2) {
-    display.drawRect(i, i, display.width()-2*i, display.height()-2*i, WHITE);
-    display.display();
-  }
-}
-
-void testdrawline() {  
-  for (int16_t i=0; i<display.width(); i+=4) {
-    display.drawLine(0, 0, i, display.height()-1, WHITE);
-    display.display();
-  }
-  for (int16_t i=0; i<display.height(); i+=4) {
-    display.drawLine(0, 0, display.width()-1, i, WHITE);
-    display.display();
-  }
-  delay(250);
-  
-  display.clearDisplay();
-  for (int16_t i=0; i<display.width(); i+=4) {
-    display.drawLine(0, display.height()-1, i, 0, WHITE);
-    display.display();
-  }
-  for (int16_t i=display.height()-1; i>=0; i-=4) {
-    display.drawLine(0, display.height()-1, display.width()-1, i, WHITE);
-    display.display();
-  }
-  delay(250);
-  
-  display.clearDisplay();
-  for (int16_t i=display.width()-1; i>=0; i-=4) {
-    display.drawLine(display.width()-1, display.height()-1, i, 0, WHITE);
-    display.display();
-  }
-  for (int16_t i=display.height()-1; i>=0; i-=4) {
-    display.drawLine(display.width()-1, display.height()-1, 0, i, WHITE);
-    display.display();
-  }
-  delay(250);
-
-  display.clearDisplay();
-  for (int16_t i=0; i<display.height(); i+=4) {
-    display.drawLine(display.width()-1, 0, 0, i, WHITE);
-    display.display();
-  }
-  for (int16_t i=0; i<display.width(); i+=4) {
-    display.drawLine(display.width()-1, 0, i, display.height()-1, WHITE); 
-    display.display();
-  }
-  delay(250);
-}
-*/
 
